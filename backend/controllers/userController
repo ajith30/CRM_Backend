@@ -1,0 +1,54 @@
+const asyncHandler = require("express-async-handler");
+const User = require("../models/userModel");
+
+const registerUser = asyncHandler(async (request, response) => {
+  const { username, firstName, lastName, password } = request.body;
+
+  const userExists = await User.findOne({ username });
+
+  if (userExists) {
+    response.status(404);
+    throw new Error("User already exists");
+  }
+
+  const user = await User.create({
+    username,
+    firstName,
+    lastName,
+    password,
+  });
+
+  if (user) {
+    response.status(201).json({
+      _id: user._id,
+      username: user.username,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      isAdmin: user.isAdmin,
+    });
+  } else {
+    response.status(400);
+    throw new Error("User not found");
+  }
+});
+
+const authUser = asyncHandler(async (reqest, response) => {
+  const { username, password } = reqest.body;
+
+  const user = await User.findOne({ username });
+
+  if (user && (await user.matchPassword(password))) {
+    response.json({
+      _id: user._id,
+      username: user.username,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      isAdmin: user.isAdmin,
+    });
+  } else {
+    response.status(401);
+    throw new Error("Invalid Email or Password");
+  }
+});
+
+module.exports = { registerUser, authUser };
